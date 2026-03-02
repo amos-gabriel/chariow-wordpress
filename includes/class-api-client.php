@@ -251,25 +251,34 @@ class Chariow_Store_Manager_Api_Client {
 
 		// Log request in debug mode
 		Chariow_Store_Manager_Helper::log( "API Request: {$method} {$url}" );
+		if ( ! empty( $body ) ) {
+			Chariow_Store_Manager_Helper::log( 'API Request Body', $body );
+		}
 
 		// Make the request
 		$response = wp_remote_request( $url, $args );
 
 		// Check for errors
 		if ( is_wp_error( $response ) ) {
-			Chariow_Store_Manager_Helper::log( 'API Error', $response );
+			Chariow_Store_Manager_Helper::log( 'API Remote Request Error', $response );
 			return $response;
 		}
 
 		// Get response code and body
 		$response_code = wp_remote_retrieve_response_code( $response );
 		$response_body = wp_remote_retrieve_body( $response );
+		$response_headers = wp_remote_retrieve_headers( $response );
 
 		// Update rate limit information
 		$this->update_rate_limit( $response );
 
 		// Log response in debug mode
-		Chariow_Store_Manager_Helper::log( "API Response: {$response_code}" );
+		Chariow_Store_Manager_Helper::log( "API Response Status: {$response_code}" );
+		Chariow_Store_Manager_Helper::log( "API Response Body: {$response_body}" );
+		
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			Chariow_Store_Manager_Helper::log( 'API Response Headers', $response_headers->getAll() );
+		}
 
 		// Decode JSON response
 		$decoded = json_decode( $response_body, true );
@@ -278,12 +287,24 @@ class Chariow_Store_Manager_Api_Client {
 		if ( $response_code < 200 || $response_code >= 300 ) {
 			$error_message = isset( $decoded['message'] ) ? $decoded['message'] : __( 'API request failed', 'chariow-store-manager' );
 			
+			// If there are specific error details in the response, append them
+			if ( ! empty( $decoded['errors'] ) && is_array( $decoded['errors'] ) ) {
+				$detail = array();
+				foreach ( $decoded['errors'] as $k => $v ) {
+					$detail[] = is_array( $v ) ? implode( ', ', $v ) : $v;
+				}
+				if ( ! empty( $detail ) ) {
+					$error_message .= ' (' . implode( ' | ', $detail ) . ')';
+				}
+			}
+
 			return new WP_Error(
 				'api_error',
 				$error_message,
 				array(
 					'status'   => $response_code,
 					'response' => $decoded,
+					'raw_body' => $response_body,
 				)
 			);
 		}
@@ -342,6 +363,6 @@ class Chariow_Store_Manager_Api_Client {
 			return $response;
 		}
 		
-		return Chariow_Store_Manager_Helper::is_success( $response );
+		return Chariow_Store_Manager_Helper::is_success( $response ) ? $response : false;
 	}
 }

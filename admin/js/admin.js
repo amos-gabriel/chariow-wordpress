@@ -2,10 +2,10 @@
  * Chariow Store Manager Admin JavaScript
  */
 
-(function($) {
+(function ($) {
 	'use strict';
 
-	$(document).ready(function() {
+	$(document).ready(function () {
 		// Admin initialization code can go here
 		console.log('Chariow Store Manager admin loaded');
 	});

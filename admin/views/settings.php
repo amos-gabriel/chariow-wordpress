@@ -56,17 +56,22 @@ jQuery(document).ready(function($) {
 		$status.html('');
 		
 		$.ajax({
-			url: ajaxurl,
-			type: 'POST',
+			url: chariowAdmin.ajaxUrl,
+			type: 'GET',
 			data: {
 				action: 'chariow_test_connection',
-				nonce: '<?php echo esc_js( wp_create_nonce( 'chariow_test_connection' ) ); ?>'
+				nonce: chariowAdmin.nonce
 			},
 			success: function(response) {
 				if (response.success) {
 					$status.html('<div class="notice notice-success inline"><p>' + response.data.message + '</p></div>');
 				} else {
-					$status.html('<div class="notice notice-error inline"><p>' + response.data.message + '</p></div>');
+					var msg = response.data.message;
+					if (response.data.status) {
+						msg += ' (HTTP ' + response.data.status + ')';
+					}
+					$status.html('<div class="notice notice-error inline"><p>' + msg + '</p></div>');
+					console.error('Chariow Connection Error:', response.data);
 				}
 			},
 			error: function() {

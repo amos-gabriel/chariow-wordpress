@@ -260,7 +260,7 @@ class Chariow_Admin {
 			'chariowAdmin',
 			array(
 				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-				'nonce'   => wp_create_nonce( 'chariow_admin_nonce' ),
+				'nonce'   => wp_create_nonce( 'chariow_test_connection' ),
 			)
 		);
 	}
@@ -289,14 +289,27 @@ class Chariow_Admin {
 					__( 'Connection failed: %s', 'chariow-store-manager' ),
 					$result->get_error_message()
 				),
+				'status'  => $result->get_error_data()['status'] ?? 0,
+				'details' => $result->get_error_data(),
 			) );
-		} elseif ( true === $result ) {
+		} elseif ( ! empty( $result ) ) {
+			$store_name = $result['data']['name'] ?? '';
+			$message    = __( 'Connection successful! Your API key is working correctly.', 'chariow-store-manager' );
+			
+			if ( $store_name ) {
+				$message = sprintf(
+					__( 'Connection successful! Connected to: <strong>%s</strong>', 'chariow-store-manager' ),
+					esc_html( $store_name )
+				);
+			}
+
 			wp_send_json_success( array(
-				'message' => __( 'Connection successful! Your API key is working correctly.', 'chariow-store-manager' ),
+				'message' => $message,
 			) );
 		} else {
 			wp_send_json_error( array(
 				'message' => __( 'Connection failed. Please check your API key.', 'chariow-store-manager' ),
+				'status'  => 401,
 			) );
 		}
 	}
